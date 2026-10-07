@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: PageProps<"/a/[shortId]">): P
       title: `${a.title} by ${a.user.displayName}`,
       description,
       robots: isPublic ? undefined : { index: false, follow: false },
-      openGraph: isPublic ? { title: `${a.title} · ${a.user.displayName}`, description, type: "article", images: a.photos[0] ? [{ url: a.photos[0].url }] : undefined } : undefined,
+      openGraph: isPublic ? { title: `${a.title} · ${a.user.displayName}`, description, type: "article" } : undefined,
     };
   } catch {
     return { title: "Workout", robots: { index: false } };

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PageHeader } from "@/components/app/page-header";
+import { ShareWorkoutDialog } from "@/components/app/share-workout";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card, ErrorState, Skeleton, Stat } from "@/components/ui/feedback";
 import { Field, Input } from "@/components/ui/form";
@@ -25,6 +26,7 @@ export function WorkoutDetail({ id }: { id: string }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saveTpl, setSaveTpl] = useState(false);
   const [tplName, setTplName] = useState("");
+  const [shareOpen, setShareOpen] = useState(false);
   const w = useQuery({ queryKey: ["workout", id, "detail"], queryFn: () => get<Workout>(`/workouts/${id}`) });
   const prs = useQuery({ queryKey: ["workout", id, "prs"], queryFn: () => get<Pr[]>(`/workouts/${id}/prs`), enabled: w.data?.status === "COMPLETED" });
 
@@ -68,15 +70,16 @@ export function WorkoutDetail({ id }: { id: string }) {
         title={workout.title}
         subtitle={longDate(workout.startedAt)}
         actions={
-          workout.activityId ? (
-            <ButtonLink href={`/workouts/${id}/publish`} variant="outline">
-              <Share2 className="h-4 w-4" aria-hidden /> Edit post
-            </ButtonLink>
-          ) : (
-            <ButtonLink href={`/workouts/${id}/publish`}>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => setShareOpen(true)}>
               <Share2 className="h-4 w-4" aria-hidden /> Share
-            </ButtonLink>
-          )
+            </Button>
+            {workout.activityStatus === "PUBLISHED" ? (
+              <ButtonLink href={`/workouts/${id}/publish`} variant="outline">
+                Edit post
+              </ButtonLink>
+            ) : null}
+          </div>
         }
       />
 
@@ -147,6 +150,15 @@ export function WorkoutDetail({ id }: { id: string }) {
         </Button>
       </div>
 
+      <ShareWorkoutDialog
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        activityId={workout.activityId}
+        shortId={workout.activityShortId}
+        isPublic={workout.activityStatus === "PUBLISHED" && workout.activityVisibility === "PUBLIC"}
+        isOwner
+        workoutId={workout.id}
+      />
       <ConfirmDialog open={confirmDelete} onClose={() => setConfirmDelete(false)} onConfirm={() => remove.mutate()} loading={remove.isPending} danger title="Delete workout?" confirmLabel="Delete" message="Your logged sets and records from this session are removed. A shared post keeps its summary." />
       <Dialog open={saveTpl} onClose={() => setSaveTpl(false)} title="Save as template">
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); template.mutate(); }}>

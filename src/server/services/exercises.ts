@@ -1,43 +1,84 @@
 import { and, asc, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
 import type { SessionUser } from "@/server/auth/session";
 import { getDb } from "@/server/db";
-import { exercises, workoutExercises, workoutSets, workouts, personalRecords } from "@/server/db/schema";
+import { exerciseMedia, exercises, workoutExercises, workoutSets, workouts, personalRecords } from "@/server/db/schema";
+import { mediaUrl } from "@/server/storage";
 import { conflict, forbidden, notFound } from "@/server/http/errors";
 import { decodeCursor, encodeCursor, type Page } from "@/server/lib/cursor";
 import { estimateOneRepMax } from "@/lib/calc/one-rep-max";
 import { config } from "@/server/config";
 import type { ExerciseInput } from "@/lib/validators/exercise";
 
+export type ExerciseMediaDto = {
+  id: string;
+  provider: string;
+  mediaType: string;
+  url: string | null;
+  license: string | null;
+  attribution: string | null;
+};
+
 export type ExerciseDto = {
   id: string;
   name: string;
   description: string | null;
   instructions: string | null;
+  setupInstructions: string | null;
+  executionSteps: string[];
+  breathingNotes: string | null;
+  commonMistakes: string[];
   primaryMuscleGroup: string;
   secondaryMuscles: string[];
   equipment: string;
   exerciseType: string;
   trackingMode: string;
   difficulty: string;
+  mediaUrl: string | null;
+  media: ExerciseMediaDto[];
   isGlobal: boolean;
   isMine: boolean;
 };
 
-export function toExerciseDto(e: typeof exercises.$inferSelect, viewerId: string | null): ExerciseDto {
+export function toExerciseDto(e: typeof exercises.$inferSelect, viewerId: string | null, media: ExerciseMediaDto[] = []): ExerciseDto {
   return {
     id: e.id,
     name: e.name,
     description: e.description,
     instructions: e.instructions,
+    setupInstructions: e.setupInstructions,
+    executionSteps: e.executionSteps ?? [],
+    breathingNotes: e.breathingNotes,
+    commonMistakes: e.commonMistakes ?? [],
     primaryMuscleGroup: e.primaryMuscleGroup,
     secondaryMuscles: e.secondaryMuscles ?? [],
     equipment: e.equipment,
     exerciseType: e.exerciseType,
     trackingMode: e.trackingMode,
     difficulty: e.difficulty,
+    mediaUrl: e.mediaUrl,
+    media,
     isGlobal: e.isGlobal,
     isMine: e.ownerUserId !== null && e.ownerUserId === viewerId,
   };
+}
+
+async function loadMedia(ids: string[]): Promise<Map<string, ExerciseMediaDto[]>> {
+  const map = new Map<string, ExerciseMediaDto[]>();
+  if (ids.length === 0) return map;
+  const rows = await getDb().select().from(exerciseMedia).where(inArray(exerciseMedia.exerciseId, ids)).orderBy(asc(exerciseMedia.sortOrder));
+  for (const r of rows) {
+    const list = map.get(r.exerciseId) ?? [];
+    list.push({
+      id: r.id,
+      provider: r.provider,
+      mediaType: r.mediaType,
+      url: r.sourceUrl ?? mediaUrl(r.storageKey),
+      license: r.license,
+      attribution: r.attribution,
+    });
+    map.set(r.exerciseId, list);
+  }
+  return map;
 }
 
 /** Visible to a user: global exercises plus their own custom ones. */
@@ -63,8 +104,9 @@ export async function listExercises(
     .orderBy(asc(exercises.name), asc(exercises.id))
     .limit(q.limit + 1);
   const page = rows.slice(0, q.limit);
+  const media = await loadMedia(page.map((e) => e.id));
   return {
-    items: page.map((e) => toExerciseDto(e, user.id)),
+    items: page.map((e) => toExerciseDto(e, user.id, media.get(e.id) ?? [])),
     next_cursor: rows.length > q.limit ? encodeCursor({ n: page[page.length - 1].name, id: page[page.length - 1].id }) : null,
   };
 }
@@ -214,8 +256,9 @@ export async function exerciseHistory(user: SessionUser, exerciseId: string) {
   const bestByType = new Map<string, (typeof records)[number]>();
   for (const r of records) if (!bestByType.has(r.recordType)) bestByType.set(r.recordType, r);
 
+  const media = await loadMedia([ex.id]);
   return {
-    exercise: toExerciseDto(ex, user.id),
+    exercise: toExerciseDto(ex, user.id, media.get(ex.id) ?? []),
     sessions: sessions.map((s) => ({
       workoutId: s.workoutId,
       title: s.title,

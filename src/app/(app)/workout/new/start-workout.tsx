@@ -30,7 +30,7 @@ export function StartWorkout() {
   const today = useQuery({ queryKey: ["program-today"], queryFn: () => get<Today>("/programs/today") });
   const recent = useQuery({ queryKey: ["workouts", "recent"], queryFn: () => get<Page<WorkoutListEntry>>("/workouts?limit=3") });
 
-  async function start(key: string, body: Record<string, string> = {}) {
+  async function start(key: string, body: Record<string, unknown> = {}) {
     setStarting(key);
     try {
       const w = await post<Workout>("/workouts", body);
@@ -49,16 +49,27 @@ export function StartWorkout() {
 
   // Resume an in-progress workout instead of offering to start another.
   useEffect(() => {
-    if (active.data) router.replace(`/workout/${active.data.id}`);
-  }, [active.data, router]);
+    if (!active.data) return;
+    const exercise = params.get("exercise");
+    router.replace(exercise ? `/workout/${active.data.id}?add=${exercise}` : `/workout/${active.data.id}`);
+  }, [active.data, params, router]);
 
-  // Deep links: /workout/new?template=…, ?repeat=…, ?programDay=…
+  // Deep links: /workout/new?template=…, ?repeat=…, ?programDay=…, ?exercise=…
   useEffect(() => {
     if (autoStarted.current || active.isLoading || active.data) return;
     const template = params.get("template");
     const repeat = params.get("repeat");
     const day = params.get("programDay");
-    const body: Record<string, string> | null = template ? { templateId: template } : repeat ? { repeatWorkoutId: repeat } : day ? { programDayId: day } : null;
+    const exercise = params.get("exercise");
+    const body: Record<string, unknown> | null = template
+      ? { templateId: template }
+      : repeat
+        ? { repeatWorkoutId: repeat }
+        : day
+          ? { programDayId: day }
+          : exercise
+            ? { exerciseIds: [exercise] }
+            : null;
     if (body) {
       autoStarted.current = true;
       // eslint-disable-next-line react-hooks/set-state-in-effect -- deep links start a workout once, as an effect of the URL

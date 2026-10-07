@@ -9,6 +9,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/form";
 import { post, errorMessage } from "@/lib/client/api";
+import { GoogleButton } from "@/components/app/google-button";
 import { AuthCard, FormError } from "../auth-form";
 
 const schema = z.object({ identifier: z.string().trim().min(1, "Enter your email or username"), password: z.string().min(1, "Enter your password") });
@@ -19,8 +20,10 @@ const safeNext = (n: string | null) => (n && n.startsWith("/") && !n.startsWith(
 
 export function LoginForm() {
   const router = useRouter();
-  const next = safeNext(useSearchParams().get("next"));
-  const [error, setError] = useState<string | null>(null);
+  const params = useSearchParams();
+  const next = safeNext(params.get("next"));
+  const oauth = params.get("oauth");
+  const [error, setError] = useState<string | null>(oauth === "denied" ? "Google sign-in was cancelled." : oauth === "error" ? params.get("reason") : null);
   const { register, handleSubmit, formState } = useForm<Values>({ resolver: zodResolver(schema) });
 
   const onSubmit = handleSubmit(async (values) => {
@@ -44,11 +47,18 @@ export function LoginForm() {
           <Link href="/register" className="font-semibold text-accent hover:underline">
             Create an account
           </Link>
+          <span className="mt-2 block">
+            Staff?{" "}
+            <Link href="/admin/login" className="font-semibold text-accent hover:underline">
+              Admin sign in
+            </Link>
+          </span>
         </>
       }
     >
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
         <FormError message={error} />
+        <GoogleButton next={next} divider="or email" />
         <Field label="Email or username" error={formState.errors.identifier?.message}>
           {(p) => <Input {...p} autoComplete="username" autoCapitalize="none" autoFocus {...register("identifier")} />}
         </Field>

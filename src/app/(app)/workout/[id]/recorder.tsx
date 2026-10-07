@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CloudCheck, CloudOff, Flag, Loader2, MoreVertical, Plus, Timer, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ExercisePicker } from "@/components/app/exercise-picker";
 import { Button } from "@/components/ui/button";
 import { Card, ErrorState, Skeleton } from "@/components/ui/feedback";
@@ -25,7 +25,7 @@ const DEFAULT_REST = 90;
 
 type CompleteResult = { workout: Workout; prs: Array<{ exerciseId: string; exerciseName: string; recordType: string; value: number; previousValue: number; unit: string }>; alreadyCompleted: boolean };
 
-export function Recorder({ id }: { id: string }) {
+export function Recorder({ id, addExerciseId }: { id: string; addExerciseId?: string }) {
   const router = useRouter();
   const qc = useQueryClient();
   const units = useUnits();
@@ -91,6 +91,60 @@ export function Recorder({ id }: { id: string }) {
     return { sets, volume };
   }, [state]);
 
+  const addedFromLink = useRef(false);
+
+  async function refreshHints() {
+    try {
+      await saveNow();
+      const w = await get<Workout>(`/workouts/${id}`);
+      const hints = new Map(w.exercises.map((e) => [e.id, e.previous ?? null]));
+      setState((s) => (s ? { ...s, exercises: s.exercises.map((e) => (hints.has(e.id) && !e.previous ? { ...e, previous: hints.get(e.id)! } : e)) } : s));
+    } catch {
+      /* hints are optional */
+    }
+  }
+
+  function addExercises(list: Exercise[]) {
+    setState((s) => {
+      if (!s) return s;
+      return {
+        ...s,
+        exercises: [
+          ...s.exercises,
+          ...list.map<ExerciseState>((ex) => ({
+            id: newId(),
+            exerciseId: ex.id,
+            exercise: { id: ex.id, name: ex.name, primaryMuscleGroup: ex.primaryMuscleGroup, equipment: ex.equipment, trackingMode: ex.trackingMode, exerciseType: ex.exerciseType },
+            notes: null,
+            restSeconds: null,
+            previous: null,
+            sets: [blankSet()],
+          })),
+        ],
+      };
+    });
+    void refreshHints();
+  }
+
+  useEffect(() => {
+    if (!addExerciseId || !state || addedFromLink.current) return;
+    if (state.exercises.some((e) => e.exerciseId === addExerciseId)) {
+      addedFromLink.current = true;
+      router.replace(`/workout/${id}`);
+      return;
+    }
+    addedFromLink.current = true;
+    get<Exercise>(`/exercises/${addExerciseId}`)
+      .then((ex) => {
+        addExercises([ex]);
+        router.replace(`/workout/${id}`);
+      })
+      .catch(() => {
+        addedFromLink.current = false;
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- add the deep-linked exercise once after hydration
+  }, [addExerciseId, state]);
+
   if (query.isError) {
     const gone = query.error instanceof ApiClientError && query.error.status === 404;
     return <ErrorState message={gone ? "This workout no longer exists." : query.error.message} onRetry={gone ? () => router.replace("/workout/new") : () => query.refetch()} />;
@@ -109,37 +163,6 @@ export function Recorder({ id }: { id: string }) {
   const elapsed = Math.max(0, Math.floor((now - startedAt) / 1000));
   const update = (fn: (s: RecorderState) => RecorderState) => setState((s) => (s ? fn(s) : s));
   const updateExercise = (exId: string, fn: (e: ExerciseState) => ExerciseState) => update((s) => ({ ...s, exercises: s.exercises.map((e) => (e.id === exId ? fn(e) : e)) }));
-
-  function addExercises(list: Exercise[]) {
-    update((s) => ({
-      ...s,
-      exercises: [
-        ...s.exercises,
-        ...list.map<ExerciseState>((ex) => ({
-          id: newId(),
-          exerciseId: ex.id,
-          exercise: { id: ex.id, name: ex.name, primaryMuscleGroup: ex.primaryMuscleGroup, equipment: ex.equipment, trackingMode: ex.trackingMode, exerciseType: ex.exerciseType },
-          notes: null,
-          restSeconds: null,
-          previous: null,
-          sets: [blankSet()],
-        })),
-      ],
-    }));
-    void refreshHints();
-  }
-
-  /** Previous-performance hints are computed server-side; pull them for freshly added exercises. */
-  async function refreshHints() {
-    try {
-      await saveNow();
-      const w = await get<Workout>(`/workouts/${id}`);
-      const hints = new Map(w.exercises.map((e) => [e.id, e.previous ?? null]));
-      setState((s) => (s ? { ...s, exercises: s.exercises.map((e) => (hints.has(e.id) && !e.previous ? { ...e, previous: hints.get(e.id)! } : e)) } : s));
-    } catch {
-      /* hints are optional */
-    }
-  }
 
   function toggleSet(ex: ExerciseState, set: SetState) {
     const completed = !set.completed;

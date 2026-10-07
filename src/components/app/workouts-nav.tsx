@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/templates", label: "Templates" },
   { href: "/programs", label: "Programs" },
   { href: "/exercises", label: "Exercises" },
+  { href: "/leaderboards", label: "Friends" },
 ];
 
 /** Secondary navigation shared by the training-related sections. */

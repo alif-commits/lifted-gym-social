@@ -66,6 +66,12 @@ export function ExerciseLibrary() {
         empty={<EmptyState icon={<Dumbbell className="h-7 w-7" aria-hidden />} title="No exercises found" description="Try a different search, or create a custom exercise." />}
         render={(e) => (
           <Link key={e.id} href={`/exercises/${e.id}`} className="flex items-center gap-3 px-4 py-3.5 hover:bg-surface-2">
+            {e.media[0]?.url ? (
+              // eslint-disable-next-line @next/next/no-img-element -- licensed exercise stills
+              <img src={e.media[0].url} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover bg-surface-3" />
+            ) : (
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-surface-3 text-xs font-bold text-subtle">{titleCase(e.primaryMuscleGroup).slice(0, 2)}</span>
+            )}
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium">{e.name}</p>
               <p className="truncate text-xs text-subtle">

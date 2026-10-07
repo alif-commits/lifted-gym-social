@@ -8,7 +8,9 @@ import { createSession, revokeAllSessions } from "@/server/auth/session";
 import { ApiError, badRequest, conflict } from "@/server/http/errors";
 import { randomToken, sha256Hex } from "@/server/lib/ids";
 import { isValidTimezone } from "@/lib/tz";
+import { isStaffRole } from "@/lib/constants";
 import type { LoginInput, RegisterInput } from "@/lib/validators/auth";
+import { config } from "@/server/config";
 import { writeAudit } from "./audit";
 
 const HOUR = 60 * 60 * 1000;
@@ -35,9 +37,10 @@ export async function registerUser(input: RegisterInput) {
   const timezone = input.timezone && isValidTimezone(input.timezone) ? input.timezone : "UTC";
 
   const user = await db.transaction(async (tx) => {
+    const role = config.adminBootstrapEmail && input.email === config.adminBootstrapEmail ? "admin" : "user";
     const [u] = await tx
       .insert(users)
-      .values({ email: input.email, username: input.username, displayName: input.displayName, passwordHash })
+      .values({ email: input.email, username: input.username, displayName: input.displayName, passwordHash, role })
       .returning();
     await tx.insert(profiles).values({ userId: u.id });
     await tx.insert(userSettings).values({ userId: u.id, timezone });
@@ -51,7 +54,7 @@ export async function registerUser(input: RegisterInput) {
   return user;
 }
 
-export async function loginUser(input: LoginInput) {
+async function authenticate(input: LoginInput) {
   const db = getDb();
   const [user] = await db
     .select()
@@ -65,8 +68,22 @@ export async function loginUser(input: LoginInput) {
   const ok = await verifyPassword(user.passwordHash, input.password);
   if (!ok) throw new ApiError(401, "INVALID_CREDENTIALS", "Incorrect email/username or password");
   if (user.status === "suspended") throw new ApiError(403, "ACCOUNT_SUSPENDED", "This account has been suspended");
+  return user;
+}
+
+export async function loginUser(input: LoginInput) {
+  const user = await authenticate(input);
   await createSession(user.id);
   await writeAudit({ userId: user.id, action: "auth.login", entityType: "user", entityId: user.id });
+  return user;
+}
+
+/** Same as login, but only admin/moderator accounts may start a session this way. */
+export async function loginStaff(input: LoginInput) {
+  const user = await authenticate(input);
+  if (!isStaffRole(user.role)) throw new ApiError(403, "NOT_STAFF", "This sign-in is for staff only");
+  await createSession(user.id);
+  await writeAudit({ userId: user.id, action: "auth.admin_login", entityType: "user", entityId: user.id });
   return user;
 }
 

@@ -157,6 +157,13 @@ export const RESERVED_USERNAMES = new Set([
 ]);
 export const USERNAME_CHANGE_COOLDOWN_DAYS = 30;
 
+export const STAFF_ROLES = ["admin", "moderator"] as const;
+export type StaffRole = (typeof STAFF_ROLES)[number];
+export const USER_ROLES = ["user", "moderator", "admin"] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+export const isStaffRole = (role: string) => role === "admin" || role === "moderator";
+export const isAdminRole = (role: string) => role === "admin";
+
 export const MAX_ACTIVITY_PHOTOS = 6;
 export const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 export const ALLOWED_IMAGE_MIME = ["image/jpeg", "image/png", "image/webp"] as const;

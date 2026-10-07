@@ -1,11 +1,12 @@
 "use client";
 
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Share2, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ActivityCard } from "@/components/app/activity-card";
 import { Comments } from "@/components/app/comments";
+import { ShareWorkoutDialog } from "@/components/app/share-workout";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Badge, Card, SectionTitle } from "@/components/ui/feedback";
 import { ConfirmDialog, toast } from "@/components/ui/overlay";
@@ -19,6 +20,7 @@ export function ActivityPage({ activity: a }: { activity: ActivityDetail }) {
   const units = useUnits();
   const [confirm, setConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   async function remove() {
     setDeleting(true);
@@ -53,18 +55,21 @@ export function ActivityPage({ activity: a }: { activity: ActivityDetail }) {
 
       <ActivityCard activity={a} />
 
-      {a.isOwner ? (
-        <div className="flex flex-wrap gap-2">
-          {a.workoutId ? (
-            <ButtonLink variant="outline" href={`/workouts/${a.workoutId}/publish`}>
-              <Pencil className="h-4 w-4" aria-hidden /> Edit post
-            </ButtonLink>
-          ) : null}
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" onClick={() => setShareOpen(true)}>
+          <Share2 className="h-4 w-4" aria-hidden /> Share
+        </Button>
+        {a.isOwner && a.workoutId ? (
+          <ButtonLink variant="outline" href={`/workouts/${a.workoutId}/publish`}>
+            <Pencil className="h-4 w-4" aria-hidden /> Edit post
+          </ButtonLink>
+        ) : null}
+        {a.isOwner ? (
           <Button variant="danger" onClick={() => setConfirm(true)}>
             <Trash2 className="h-4 w-4" aria-hidden /> Delete post
           </Button>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
 
       {a.exercises?.length ? (
         <section aria-labelledby="exercises-title">
@@ -96,6 +101,14 @@ export function ActivityPage({ activity: a }: { activity: ActivityDetail }) {
 
       {a.status === "PUBLISHED" ? <Comments activityId={a.id} redirectTo={`/a/${a.shortId}`} /> : null}
 
+      <ShareWorkoutDialog
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        activityId={a.id}
+        shortId={a.shortId}
+        isPublic={a.status === "PUBLISHED" && a.visibility === "PUBLIC"}
+        isOwner={a.isOwner}
+      />
       <ConfirmDialog open={confirm} onClose={() => setConfirm(false)} onConfirm={remove} loading={deleting} danger title="Delete this post?" confirmLabel="Delete" message="Likes and comments are removed. Your logged workout stays in your history." />
     </div>
   );

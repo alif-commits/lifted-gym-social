@@ -27,4 +27,17 @@ export const config = {
     from: process.env.EMAIL_FROM ?? "LIFTED <no-reply@example.com>",
   },
   cronSecret: process.env.CRON_SECRET,
+  /** Email that is granted admin on register (and by `db:seed` if the account already exists). */
+  adminBootstrapEmail: process.env.ADMIN_BOOTSTRAP_EMAIL?.trim().toLowerCase() || null,
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+    configured: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+  },
+  strava: {
+    clientId: process.env.STRAVA_CLIENT_ID ?? "",
+    clientSecret: process.env.STRAVA_CLIENT_SECRET ?? "",
+    webhookSecret: process.env.STRAVA_WEBHOOK_SECRET ?? "",
+    configured: Boolean(process.env.STRAVA_CLIENT_ID && process.env.STRAVA_CLIENT_SECRET),
+  },
 };

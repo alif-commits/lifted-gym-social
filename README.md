@@ -30,6 +30,10 @@ npm run dev                     # http://localhost:3000
 | `FOOD_SCAN_MODEL` | optional | AI Gateway `provider/model` id. Default `google/gemini-3.8-flash`. |
 | `RESEND_API_KEY`, `EMAIL_FROM` | optional | Without them, verification and reset links are printed to the server log. |
 | `CRON_SECRET` | prod | Protects `/api/v1/cron/cleanup` (daily, see `vercel.json`). The route refuses to run in production without it. |
+| `ADMIN_BOOTSTRAP_EMAIL` | optional | That email is granted **admin** on register, and by `npm run db:seed` if the account already exists. Staff sign in at `/admin/login`. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | optional | Enables Continue with Google. Existing email/password accounts still work and can link Google in Settings → Connections. |
+| `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET` | optional | One-way Strava import. Redirect `{APP_URL}/api/v1/integrations/strava/callback`. Imported sessions are marked Strava; native LIFTED workouts are unchanged. |
+| `STRAVA_WEBHOOK_SECRET` | optional | Verify token for `GET/POST /api/v1/integrations/strava/webhook`. |
 
 ## Scripts
 
@@ -50,4 +54,6 @@ npm run dev                     # http://localhost:3000
 3. Run `npm run db:migrate && npm run db:seed` once against the production database.
 4. Set `CRON_SECRET`; Vercel Cron then calls `/api/v1/cron/cleanup` daily with `Authorization: Bearer $CRON_SECRET`.
 
-To create a moderator, set `users.role` to `moderator` or `admin` in the database; they then get the **Moderation** entry in the sidebar (`/admin`).
+Staff sign in at `/admin/login` (admin/moderator only). The **Admin** sidebar entry opens the dashboard (`/admin`): stats, user roles, and the report queue. Grant admin with `ADMIN_BOOTSTRAP_EMAIL`, the Users tab, or `update users set role = 'admin' where email = '…'`.
+
+Published workouts are public at `/a/[shortId]`. From the workout or activity page you can copy that URL and download a generated **PNG / JPG / PDF** card (`GET /api/v1/activities/:id/export?format=`).

@@ -11,6 +11,7 @@ import { Field, Input } from "@/components/ui/form";
 import { registerSchema } from "@/lib/validators/auth";
 import { ApiClientError, get, post, qs } from "@/lib/client/api";
 import { cn } from "@/lib/client/cn";
+import { GoogleButton } from "@/components/app/google-button";
 import { AuthCard, FormError } from "../auth-form";
 
 type Values = { email: string; password: string; username: string; displayName: string };
@@ -74,6 +75,7 @@ export function RegisterForm() {
     >
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
         <FormError message={error} />
+        <GoogleButton label="Continue with Google" divider="or email" />
         <Field label="Display name" error={formState.errors.displayName?.message}>
           {(p) => <Input {...p} autoComplete="name" autoFocus {...register("displayName")} />}
         </Field>

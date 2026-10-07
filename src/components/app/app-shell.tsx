@@ -53,7 +53,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {isStaff ? (
             <Link href="/admin" className={cn("flex h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-semibold", isActive(path, "/admin") ? "bg-accent-soft text-accent" : "text-muted hover:bg-surface-2 hover:text-fg")}>
               <ShieldCheck className="h-5 w-5" aria-hidden />
-              Moderation
+              Admin
             </Link>
           ) : null}
           <ButtonLink href="/workout/new" size="lg" className="mt-4">

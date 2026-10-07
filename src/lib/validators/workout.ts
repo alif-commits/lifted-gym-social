@@ -40,6 +40,7 @@ export const startWorkoutSchema = z.object({
   templateId: uuid.optional(),
   repeatWorkoutId: uuid.optional(),
   programDayId: uuid.optional(),
+  exerciseIds: z.array(uuid).min(1).max(20).optional(),
 });
 export type StartWorkoutInput = z.infer<typeof startWorkoutSchema>;
 

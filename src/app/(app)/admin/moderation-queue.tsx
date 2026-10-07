@@ -19,7 +19,7 @@ type Queue = { counts: Partial<Record<Status, number>>; items: Report[] };
 
 const ACTION_LABEL: Record<Action, string> = { DISMISS: "Dismiss", REMOVE_CONTENT: "Remove content", SUSPEND_USER: "Suspend user" };
 
-export function ModerationQueue() {
+export function ModerationQueue({ embedded }: { embedded?: boolean } = {}) {
   const qc = useQueryClient();
   const [status, setStatus] = useState<Status>("OPEN");
   const [pending, setPending] = useState<{ report: Report; action: Action } | null>(null);
@@ -34,7 +34,7 @@ export function ModerationQueue() {
 
   return (
     <>
-      <PageHeader title="Moderation" subtitle="Review reports. Every action is logged." />
+      {embedded ? null : <PageHeader title="Moderation" subtitle="Review reports. Every action is logged." />}
       <Tabs
         label="Report status"
         value={status}

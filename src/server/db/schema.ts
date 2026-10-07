@@ -45,6 +45,7 @@ export const users = pgTable(
     passwordHash: text("password_hash").notNull(),
     displayName: varchar("display_name", { length: 80 }).notNull(),
     avatarKey: text("avatar_key"),
+    googleSub: varchar("google_sub", { length: 64 }),
     status: varchar("status", { length: 16 }).notNull().default("active"), // active | suspended | deleted
     role: varchar("role", { length: 16 }).notNull().default("user"), // user | moderator | admin
     emailVerifiedAt: ts("email_verified_at"),
@@ -56,6 +57,7 @@ export const users = pgTable(
   (t) => [
     uniqueIndex("users_email_uq").on(t.email),
     uniqueIndex("users_username_uq").on(t.username),
+    uniqueIndex("users_google_sub_uq").on(t.googleSub),
     index("users_status_idx").on(t.status),
     index("users_created_at_idx").on(t.createdAt),
     index("users_username_trgm_idx").using("gin", sql`${t.username} gin_trgm_ops`),
@@ -232,6 +234,10 @@ export const exercises = pgTable(
     trackingMode: varchar("tracking_mode", { length: 24 }).notNull().default("WEIGHT_REPS"),
     difficulty: varchar("difficulty", { length: 16 }).notNull().default("INTERMEDIATE"),
     mediaUrl: text("media_url"),
+    setupInstructions: text("setup_instructions"),
+    executionSteps: jsonb("execution_steps").$type<string[]>().notNull().default([]),
+    breathingNotes: text("breathing_notes"),
+    commonMistakes: jsonb("common_mistakes").$type<string[]>().notNull().default([]),
     isGlobal: boolean("is_global").notNull().default(false),
     active: boolean("active").notNull().default(true),
     createdAt: createdAt(),
@@ -242,6 +248,62 @@ export const exercises = pgTable(
     index("exercises_muscle_idx").on(t.primaryMuscleGroup),
     index("exercises_name_trgm_idx").using("gin", sql`${t.name} gin_trgm_ops`),
   ],
+);
+
+export const exerciseMedia = pgTable(
+  "exercise_media",
+  {
+    id: pk(),
+    exerciseId: uuid("exercise_id")
+      .notNull()
+      .references(() => exercises.id, { onDelete: "cascade" }),
+    provider: varchar("provider", { length: 32 }).notNull(),
+    mediaType: varchar("media_type", { length: 16 }).notNull(), // IMAGE | GIF | VIDEO
+    sourceUrl: text("source_url"),
+    storageKey: text("storage_key"),
+    license: varchar("license", { length: 80 }),
+    attribution: text("attribution"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => [index("exercise_media_exercise_idx").on(t.exerciseId)],
+);
+
+export const externalConnections = pgTable(
+  "external_connections",
+  {
+    id: pk(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    provider: varchar("provider", { length: 24 }).notNull(), // STRAVA
+    externalUserId: varchar("external_user_id", { length: 64 }).notNull(),
+    accessToken: text("access_token").notNull(),
+    refreshToken: text("refresh_token").notNull(),
+    tokenExpiresAt: ts("token_expires_at").notNull(),
+    scope: text("scope"),
+    athleteName: varchar("athlete_name", { length: 120 }),
+    lastSyncedAt: ts("last_synced_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("external_connections_user_provider_uq").on(t.userId, t.provider), index("external_connections_provider_ext_idx").on(t.provider, t.externalUserId)],
+);
+
+export const externalActivities = pgTable(
+  "external_activities",
+  {
+    id: pk(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    provider: varchar("provider", { length: 24 }).notNull(),
+    externalActivityId: varchar("external_activity_id", { length: 64 }).notNull(),
+    workoutId: uuid("workout_id").references(() => workouts.id, { onDelete: "set null" }),
+    importedAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("external_activities_provider_ext_user_uq").on(t.provider, t.externalActivityId, t.userId)],
 );
 
 export const workoutTemplates = pgTable(
@@ -381,6 +443,7 @@ export const workouts = pgTable(
     repCount: integer("rep_count"),
     prCount: integer("pr_count"),
     caloriesBurnedEstimate: num("calories_burned_estimate"),
+    source: varchar("source", { length: 16 }).notNull().default("LIFTED"), // LIFTED | STRAVA
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

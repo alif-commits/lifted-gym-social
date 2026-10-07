@@ -65,6 +65,10 @@ export type WorkoutDto = {
   stats: { exerciseCount: number; setCount: number; repCount: number; volume: number; prCount: number; caloriesBurnedEstimate: number | null } | null;
   exercises: WorkoutExerciseDto[];
   activityId: string | null;
+  activityShortId: string | null;
+  activityStatus: string | null;
+  activityVisibility: string | null;
+  source: string;
 };
 
 /* --------------------------------- Loading -------------------------------- */
@@ -133,11 +137,19 @@ export async function getWorkout(userId: string, id: string, opts: { withPreviou
     const prev = await previousPerformance(userId, [...new Set(tree.map((t) => t.exerciseId))], w.id);
     for (const t of tree) t.previous = prev.get(t.exerciseId) ?? null;
   }
-  const [act] = await db.select({ id: activities.id }).from(activities).where(eq(activities.workoutId, w.id)).limit(1);
-  return toWorkoutDto(w, tree, act?.id ?? null);
+  const [act] = await db
+    .select({ id: activities.id, shortId: activities.shortId, status: activities.status, visibility: activities.visibility })
+    .from(activities)
+    .where(eq(activities.workoutId, w.id))
+    .limit(1);
+  return toWorkoutDto(w, tree, act ?? null);
 }
 
-function toWorkoutDto(w: Workout, tree: WorkoutExerciseDto[], activityId: string | null): WorkoutDto {
+function toWorkoutDto(
+  w: Workout,
+  tree: WorkoutExerciseDto[],
+  act: { id: string; shortId: string; status: string; visibility: string } | null,
+): WorkoutDto {
   return {
     id: w.id,
     title: w.title,
@@ -159,7 +171,11 @@ function toWorkoutDto(w: Workout, tree: WorkoutExerciseDto[], activityId: string
           }
         : null,
     exercises: tree,
-    activityId,
+    activityId: act?.id ?? null,
+    activityShortId: act?.shortId ?? null,
+    activityStatus: act?.status ?? null,
+    activityVisibility: act?.visibility ?? null,
+    source: w.source,
   };
 }
 
@@ -306,6 +322,9 @@ export async function startWorkout(user: SessionUser, input: StartWorkoutInput):
       notes: it.notes,
       sets: Array.from({ length: it.targetSets }, () => ({ weight: it.targetWeight, reps: parseRepsTarget(it.targetReps) })),
     }));
+  } else if (input.exerciseIds?.length) {
+    await assertExercisesAccessible(user.id, input.exerciseIds);
+    seed = input.exerciseIds.map((exerciseId) => ({ exerciseId, sets: [{ weight: null, reps: null }] }));
   } else if (!input.title) {
     const hour = new Date().getHours();
     title = hour < 12 ? "Morning workout" : hour < 18 ? "Afternoon workout" : "Evening workout";
@@ -461,6 +480,7 @@ export type WorkoutListItem = {
   prCount: number;
   activityId: string | null;
   activityStatus: string | null;
+  source: string;
 };
 
 export async function listWorkouts(userId: string, limit: number, cursor?: string): Promise<Page<WorkoutListItem>> {
@@ -491,6 +511,7 @@ export async function listWorkouts(userId: string, limit: number, cursor?: strin
       prCount: w.prCount ?? 0,
       activityId,
       activityStatus,
+      source: w.source,
     })),
     next_cursor: rows.length > limit ? encodeCursor({ t: page[page.length - 1].w.startedAt.toISOString(), id: page[page.length - 1].w.id }) : null,
   };

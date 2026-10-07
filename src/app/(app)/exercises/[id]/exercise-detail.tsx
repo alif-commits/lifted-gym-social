@@ -1,13 +1,13 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trash2, Trophy } from "lucide-react";
+import { Play, Trash2, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PageHeader } from "@/components/app/page-header";
 import { LineChart } from "@/components/charts/charts";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { Badge, Card, EmptyState, ErrorState, SectionTitle, Skeleton } from "@/components/ui/feedback";
 import { ConfirmDialog, toast } from "@/components/ui/overlay";
 import { del, errorMessage, get, type Serialized } from "@/lib/client/api";
@@ -44,17 +44,71 @@ export function ExerciseDetail({ id }: { id: string }) {
       <PageHeader
         title={ex.name}
         subtitle={`${titleCase(ex.primaryMuscleGroup)} · ${titleCase(ex.equipment)} · ${titleCase(ex.difficulty)}`}
-        actions={ex.isMine ? (
-          <Button variant="danger" size="sm" onClick={() => setConfirm(true)}>
-            <Trash2 className="h-4 w-4" aria-hidden /> Delete
-          </Button>
-        ) : <Badge>Library</Badge>}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <ButtonLink href={`/workout/new?exercise=${ex.id}`}>
+              <Play className="h-4 w-4" aria-hidden /> Add to workout
+            </ButtonLink>
+            {ex.isMine ? (
+              <Button variant="danger" size="sm" onClick={() => setConfirm(true)}>
+                <Trash2 className="h-4 w-4" aria-hidden /> Delete
+              </Button>
+            ) : (
+              <Badge>Library</Badge>
+            )}
+          </div>
+        }
       />
       {ex.secondaryMuscles.length ? <p className="-mt-3 mb-5 text-sm text-muted">Also works: {ex.secondaryMuscles.map(titleCase).join(", ")}</p> : null}
-      {ex.description || ex.instructions ? (
-        <Card className="mb-6 space-y-3 p-5 text-sm">
+
+      {ex.media[0]?.url ? (
+        <Card className="mb-6 overflow-hidden">
+          {ex.media[0].mediaType === "VIDEO" ? (
+            <video src={ex.media[0].url} controls className="aspect-video w-full bg-black" playsInline />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element -- licensed remote/local exercise media
+            <img src={ex.media[0].url} alt="" className="aspect-video w-full object-cover bg-surface-2" />
+          )}
+          {ex.media[0].attribution ? <p className="px-4 py-2 text-xs text-subtle">{ex.media[0].attribution}{ex.media[0].license ? ` · ${ex.media[0].license}` : ""}</p> : null}
+        </Card>
+      ) : null}
+
+      {ex.description || ex.setupInstructions || ex.executionSteps.length || ex.breathingNotes || ex.commonMistakes.length || ex.instructions ? (
+        <Card className="mb-6 space-y-5 p-5 text-sm">
           {ex.description ? <p>{ex.description}</p> : null}
-          {ex.instructions ? <p className="whitespace-pre-wrap text-muted">{ex.instructions}</p> : null}
+          {ex.setupInstructions ? (
+            <div>
+              <h2 className="mb-1 text-xs font-semibold uppercase tracking-wider text-subtle">Setup</h2>
+              <p className="whitespace-pre-wrap">{ex.setupInstructions}</p>
+            </div>
+          ) : null}
+          {ex.executionSteps.length ? (
+            <div>
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-subtle">How to perform</h2>
+              <ol className="list-decimal space-y-1.5 pl-5">
+                {ex.executionSteps.map((step, i) => (
+                  <li key={i}>{step}</li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
+          {ex.breathingNotes ? (
+            <div>
+              <h2 className="mb-1 text-xs font-semibold uppercase tracking-wider text-subtle">Breathing</h2>
+              <p>{ex.breathingNotes}</p>
+            </div>
+          ) : null}
+          {ex.commonMistakes.length ? (
+            <div>
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-subtle">Common mistakes</h2>
+              <ul className="list-disc space-y-1 pl-5 text-muted">
+                {ex.commonMistakes.map((m, i) => (
+                  <li key={i}>{m}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {!ex.executionSteps.length && ex.instructions ? <p className="whitespace-pre-wrap text-muted">{ex.instructions}</p> : null}
         </Card>
       ) : null}
 

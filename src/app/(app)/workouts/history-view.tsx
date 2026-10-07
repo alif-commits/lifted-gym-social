@@ -45,6 +45,7 @@ export function WorkoutRow({ w }: { w: WorkoutListEntry }) {
                 <Trophy className="h-3 w-3" aria-hidden /> {w.prCount}
               </Badge>
             ) : null}
+            {w.source === "STRAVA" ? <Badge>Strava</Badge> : null}
             {w.activityStatus === "PUBLISHED" ? <Badge tone="success">Shared</Badge> : w.activityStatus === "DRAFT" ? <Badge tone="warning">Draft</Badge> : null}
           </div>
         </div>
