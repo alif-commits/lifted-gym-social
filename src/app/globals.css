@@ -1,0 +1,192 @@
+@import "tailwindcss";
+
+/*
+ * LIFTED design tokens. Dark first (gyms are dim), light via system preference or the manual toggle.
+ * Colours are semantic so components never hard-code a theme.
+ */
+:root {
+  color-scheme: dark;
+  --bg: #0a0b0d;
+  --surface: #121418;
+  --surface-2: #1a1d22;
+  --surface-3: #232830;
+  --line: #2a2f37;
+  --line-strong: #3a414c;
+  --fg: #f3f4f6;
+  --fg-muted: #a0a8b4;
+  --fg-subtle: #6f7885;
+  --accent: #c8f031;
+  --accent-fg: #0a0b0d;
+  --accent-soft: rgba(200, 240, 49, 0.12);
+  --danger: #ff6b6b;
+  --danger-soft: rgba(255, 107, 107, 0.12);
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --info: #60a5fa;
+  --protein: #60a5fa;
+  --carbs: #fbbf24;
+  --fat: #f472b6;
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px -16px rgba(0, 0, 0, 0.7);
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f4f5f1;
+  --surface: #ffffff;
+  --surface-2: #f0f1ec;
+  --surface-3: #e6e8e0;
+  --line: #dcdfd5;
+  --line-strong: #bfc4b5;
+  --fg: #101214;
+  --fg-muted: #4d5560;
+  --fg-subtle: #7a8390;
+  --accent: #a7cf00;
+  --accent-fg: #0a0b0d;
+  --accent-soft: rgba(167, 207, 0, 0.16);
+  --danger: #d93a3a;
+  --danger-soft: rgba(217, 58, 58, 0.1);
+  --success: #16a34a;
+  --warning: #b7791f;
+  --info: #2563eb;
+  --protein: #2563eb;
+  --carbs: #b7791f;
+  --fat: #db2777;
+  --shadow: 0 1px 2px rgba(16, 18, 20, 0.06), 0 10px 24px -16px rgba(16, 18, 20, 0.25);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--fg-muted);
+  --color-subtle: var(--fg-subtle);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-protein: var(--protein);
+  --color-carbs: var(--carbs);
+  --color-fat: var(--fat);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-display: var(--font-display), "Arial Narrow", sans-serif;
+  --shadow-card: var(--shadow);
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Condensed uppercase display type for headings and big numbers. */
+.display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 0.95;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+/* Subtle training-floor grid used on hero surfaces. */
+.bg-grid {
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at 50% 0%, #000 20%, transparent 70%);
+  opacity: 0.45;
+}
+
+dialog {
+  color: inherit;
+}
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(3px);
+}
+
+@keyframes shimmer {
+  to {
+    background-position-x: -200%;
+  }
+}
+.skeleton {
+  background: linear-gradient(110deg, var(--surface-2) 30%, var(--surface-3) 50%, var(--surface-2) 70%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+@keyframes slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.8);
+  }
+  60% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.pop {
+  animation: pop 0.28s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Hide number input spinners; steppers are provided in the UI. */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
