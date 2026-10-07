@@ -2,7 +2,7 @@ import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { isAdminRole, isStaffRole, type UserRole } from "@/lib/constants";
 import { revokeAllSessions, type SessionUser } from "@/server/auth/session";
 import { getDb } from "@/server/db";
-import { activities, reports, users, workouts } from "@/server/db/schema";
+import { activities, auditLogs, reports, users, workouts } from "@/server/db/schema";
 import { badRequest, forbidden, notFound } from "@/server/http/errors";
 import { decodeCursor, encodeCursor, type Page } from "@/server/lib/cursor";
 import { writeAudit } from "./audit";
@@ -109,4 +109,23 @@ export async function updateAdminUser(actor: SessionUser, userId: string, patch:
     .where(eq(users.id, userId))
     .limit(1);
   return toAdminUser(updated!.u, updated!.workoutCount);
+}
+
+export async function listAdminAudit(limit = 40) {
+  const db = getDb();
+  const rows = await db
+    .select({ log: auditLogs, actor: users })
+    .from(auditLogs)
+    .leftJoin(users, eq(users.id, auditLogs.userId))
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(Math.min(limit, 80));
+  return rows.map(({ log, actor }) => ({
+    id: log.id,
+    action: log.action,
+    entityType: log.entityType,
+    entityId: log.entityId,
+    metadata: log.metadata,
+    createdAt: log.createdAt,
+    actor: actor ? userSummary(actor) : null,
+  }));
 }

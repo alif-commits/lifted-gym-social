@@ -12,6 +12,7 @@ import { isStaffRole } from "@/lib/constants";
 import type { LoginInput, RegisterInput } from "@/lib/validators/auth";
 import { config } from "@/server/config";
 import { writeAudit } from "./audit";
+import { assertCanRegister } from "./site-settings";
 
 const HOUR = 60 * 60 * 1000;
 
@@ -25,6 +26,7 @@ async function issueToken(userId: string, type: "EMAIL_VERIFY" | "PASSWORD_RESET
 }
 
 export async function registerUser(input: RegisterInput) {
+  await assertCanRegister("email");
   const db = getDb();
   const existing = await db
     .select({ email: users.email, username: users.username })

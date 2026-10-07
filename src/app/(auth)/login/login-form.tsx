@@ -8,9 +8,12 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/form";
-import { post, errorMessage } from "@/lib/client/api";
+import { get, post, errorMessage } from "@/lib/client/api";
 import { GoogleButton } from "@/components/app/google-button";
+import { useQuery } from "@tanstack/react-query";
 import { AuthCard, FormError } from "../auth-form";
+
+type Site = { registrationOpen: boolean; maintenanceMode: boolean };
 
 const schema = z.object({ identifier: z.string().trim().min(1, "Enter your email or username"), password: z.string().min(1, "Enter your password") });
 type Values = z.infer<typeof schema>;
@@ -25,6 +28,7 @@ export function LoginForm() {
   const oauth = params.get("oauth");
   const [error, setError] = useState<string | null>(oauth === "denied" ? "Google sign-in was cancelled." : oauth === "error" ? params.get("reason") : null);
   const { register, handleSubmit, formState } = useForm<Values>({ resolver: zodResolver(schema) });
+  const site = useQuery({ queryKey: ["site"], queryFn: () => get<Site>("/site"), staleTime: 60_000 });
 
   const onSubmit = handleSubmit(async (values) => {
     setError(null);
@@ -43,10 +47,16 @@ export function LoginForm() {
       subtitle="Sign in to log your next session."
       footer={
         <>
-          New to Lifted?{" "}
-          <Link href="/register" className="font-semibold text-accent hover:underline">
-            Create an account
-          </Link>
+          {site.data?.registrationOpen === false ? (
+            <span>New accounts are closed right now.</span>
+          ) : (
+            <>
+              New to Lifted?{" "}
+              <Link href="/register" className="font-semibold text-accent hover:underline">
+                Create an account
+              </Link>
+            </>
+          )}
           <span className="mt-2 block">
             Staff?{" "}
             <Link href="/admin/login" className="font-semibold text-accent hover:underline">
@@ -58,6 +68,7 @@ export function LoginForm() {
     >
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
         <FormError message={error} />
+        {site.data?.maintenanceMode ? <p className="rounded-xl border border-warning/30 bg-warning/10 px-3.5 py-2.5 text-sm">The site is in maintenance. Members will see a holding page after sign-in. Staff can keep working.</p> : null}
         <GoogleButton next={next} divider="or email" />
         <Field label="Email or username" error={formState.errors.identifier?.message}>
           {(p) => <Input {...p} autoComplete="username" autoCapitalize="none" autoFocus {...register("identifier")} />}

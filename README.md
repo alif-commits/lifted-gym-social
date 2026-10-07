@@ -54,6 +54,6 @@ npm run dev                     # http://localhost:3000
 3. Run `npm run db:migrate && npm run db:seed` once against the production database.
 4. Set `CRON_SECRET`; Vercel Cron then calls `/api/v1/cron/cleanup` daily with `Authorization: Bearer $CRON_SECRET`.
 
-Staff sign in at `/admin/login` (admin/moderator only). The **Admin** sidebar entry opens the dashboard (`/admin`): stats, user roles, and the report queue. Grant admin with `ADMIN_BOOTSTRAP_EMAIL`, the Users tab, or `update users set role = 'admin' where email = '…'`.
+Staff sign in at `/admin/login` (admin/moderator only). The **Admin** sidebar entry opens the dashboard (`/admin`): stats, users, reports, site settings (admin only), and an activity log. Site settings control registration, Google sign-up, maintenance mode, and the in-app announcement. Grant admin with `ADMIN_BOOTSTRAP_EMAIL`, the Users tab, or `update users set role = 'admin' where email = '…'`.
 
 Published workouts are public at `/a/[shortId]`. From the workout or activity page you can copy that URL and download a generated **PNG / JPG / PDF** card (`GET /api/v1/activities/:id/export?format=`).

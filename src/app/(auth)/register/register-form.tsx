@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import { Check, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,6 +15,8 @@ import { cn } from "@/lib/client/cn";
 import { GoogleButton } from "@/components/app/google-button";
 import { AuthCard, FormError } from "../auth-form";
 
+type Site = { tagline: string; registrationOpen: boolean; googleSignupOpen: boolean };
+
 type Values = { email: string; password: string; username: string; displayName: string };
 
 const rules = [
@@ -24,6 +27,7 @@ const rules = [
 
 export function RegisterForm() {
   const router = useRouter();
+  const site = useQuery({ queryKey: ["site"], queryFn: () => get<Site>("/site"), staleTime: 60_000 });
   const [error, setError] = useState<string | null>(null);
   const [checked, setChecked] = useState<{ name: string; free: boolean } | null>(null);
   const { register, handleSubmit, formState, control, setError: setFieldError } = useForm<Values>({ resolver: zodResolver(registerSchema.omit({ timezone: true })), mode: "onTouched" });
@@ -63,7 +67,7 @@ export function RegisterForm() {
   return (
     <AuthCard
       title="Join the floor"
-      subtitle="Free forever. Log workouts, track nutrition, share progress."
+      subtitle={site.data?.tagline || "Free forever. Log workouts, track nutrition, share progress."}
       footer={
         <>
           Already training with us?{" "}
@@ -73,9 +77,12 @@ export function RegisterForm() {
         </>
       }
     >
+      {site.data && !site.data.registrationOpen ? (
+        <p className="text-sm text-muted">New accounts are closed right now. If you already have one, sign in instead.</p>
+      ) : (
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
         <FormError message={error} />
-        <GoogleButton label="Continue with Google" divider="or email" />
+        <GoogleButton label="Continue with Google" divider="or email" enabled={site.data?.googleSignupOpen !== false} />
         <Field label="Display name" error={formState.errors.displayName?.message}>
           {(p) => <Input {...p} autoComplete="name" autoFocus {...register("displayName")} />}
         </Field>
@@ -114,6 +121,7 @@ export function RegisterForm() {
           Create account
         </Button>
       </form>
+      )}
     </AuthCard>
   );
 }

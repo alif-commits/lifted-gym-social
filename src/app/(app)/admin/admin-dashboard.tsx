@@ -14,9 +14,11 @@ import { errorMessage, get, patch } from "@/lib/client/api";
 import { useList } from "@/lib/client/hooks";
 import { shortDate, titleCase } from "@/lib/client/format";
 import { isAdminRole, type UserRole } from "@/lib/constants";
+import { AuditTab } from "./audit-tab";
 import { ModerationQueue } from "./moderation-queue";
+import { SiteSettingsTab } from "./site-settings-tab";
 
-type Tab = "overview" | "users" | "reports";
+type Tab = "overview" | "users" | "reports" | "site" | "activity";
 type Stats = {
   totalUsers: number;
   activeUsers: number;
@@ -44,7 +46,7 @@ export function AdminDashboard({ role }: { role: string }) {
   const admin = isAdminRole(role);
   return (
     <>
-      <PageHeader title="Admin" subtitle="Staff console — stats, people, and reports." />
+      <PageHeader title="Admin" subtitle="Staff console — site, people, and reports." />
       <Tabs
         label="Admin sections"
         value={tab}
@@ -54,11 +56,15 @@ export function AdminDashboard({ role }: { role: string }) {
           { value: "overview", label: "Overview" },
           { value: "users", label: "Users" },
           { value: "reports", label: "Reports" },
+          ...(admin ? [{ value: "site" as const, label: "Site" }] : []),
+          { value: "activity", label: "Activity" },
         ]}
       />
       {tab === "overview" ? <Overview /> : null}
       {tab === "users" ? <UserDirectory admin={admin} /> : null}
       {tab === "reports" ? <ModerationQueue embedded /> : null}
+      {tab === "site" && admin ? <SiteSettingsTab /> : null}
+      {tab === "activity" ? <AuditTab /> : null}
     </>
   );
 }

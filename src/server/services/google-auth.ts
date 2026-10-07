@@ -8,6 +8,7 @@ import { profiles, userSettings, users } from "@/server/db/schema";
 import { ApiError, conflict } from "@/server/http/errors";
 import { randomToken } from "@/server/lib/ids";
 import { writeAudit } from "./audit";
+import { assertCanRegister } from "./site-settings";
 
 type GoogleProfile = { sub: string; email: string; email_verified?: boolean; name?: string };
 
@@ -72,6 +73,7 @@ export async function loginOrCreateWithGoogle(profile: GoogleProfile) {
     return existing;
   }
 
+  await assertCanRegister("google");
   const username = await uniqueUsername(usernameFromEmail(profile.email));
   const displayName = (profile.name?.trim() || username).slice(0, 80);
   const user = await db.transaction(async (tx) => {

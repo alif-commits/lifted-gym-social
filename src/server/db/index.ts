@@ -8,7 +8,7 @@ export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 /** Either the root db or a transaction; services accept both. */
 export type DbOrTx = Db | Tx;
 
-const globalForDb = globalThis as unknown as { __liftedPool?: Pool; __liftedDb?: Db };
+const globalForDb = globalThis as unknown as { __liftedPool?: Pool; __liftedDb?: Db; __liftedSchema?: typeof schema };
 
 function createPool() {
   const url = process.env.DATABASE_URL;
@@ -31,8 +31,10 @@ function createPool() {
 
 /** Lazily initialised so `next build` does not require DATABASE_URL. */
 export function getDb(): Db {
-  if (!globalForDb.__liftedDb) {
-    globalForDb.__liftedPool = createPool();
+  if (!globalForDb.__liftedPool) globalForDb.__liftedPool = createPool();
+  // Rebuild when the schema module is replaced (next dev HMR), so new tables are queryable.
+  if (!globalForDb.__liftedDb || globalForDb.__liftedSchema !== schema) {
+    globalForDb.__liftedSchema = schema;
     globalForDb.__liftedDb = drizzle(globalForDb.__liftedPool, { schema });
   }
   return globalForDb.__liftedDb;

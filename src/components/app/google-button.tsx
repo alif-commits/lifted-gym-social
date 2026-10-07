@@ -4,9 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { get } from "@/lib/client/api";
 import { buttonClass } from "@/components/ui/button";
 
-export function GoogleButton({ intent = "login", next, label, divider }: { intent?: "login" | "link"; next?: string; label?: string; divider?: string }) {
+export function GoogleButton({ intent = "login", next, label, divider, enabled = true }: { intent?: "login" | "link"; next?: string; label?: string; divider?: string; enabled?: boolean }) {
   const q = useQuery({ queryKey: ["auth-providers"], queryFn: () => get<{ google: boolean }>("/auth/providers"), staleTime: 60_000 });
-  if (!q.data?.google) return null;
+  if (!enabled || !q.data?.google) return null;
   const params = new URLSearchParams({ intent });
   if (next) params.set("next", next);
   return (

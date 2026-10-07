@@ -1025,6 +1025,24 @@ export const moderationActions = pgTable("moderation_actions", {
   createdAt: createdAt(),
 });
 
+/** Singleton (id = 1). Public site switches controlled from the admin console. */
+export const siteSettings = pgTable(
+  "site_settings",
+  {
+    id: integer("id").primaryKey().default(1),
+    siteName: varchar("site_name", { length: 40 }).notNull().default("LIFTED"),
+    tagline: varchar("tagline", { length: 120 }).notNull().default("Log workouts, track nutrition, share progress."),
+    supportEmail: varchar("support_email", { length: 320 }),
+    registrationOpen: boolean("registration_open").notNull().default(true),
+    googleSignupOpen: boolean("google_signup_open").notNull().default(true),
+    maintenanceMode: boolean("maintenance_mode").notNull().default(false),
+    announcement: varchar("announcement", { length: 240 }),
+    updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+    updatedAt: updatedAt(),
+  },
+  (t) => [check("site_settings_singleton", sql`${t.id} = 1`)],
+);
+
 export const auditLogs = pgTable(
   "audit_logs",
   {
