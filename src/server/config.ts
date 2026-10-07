@@ -24,7 +24,8 @@ export const config = {
   },
   email: {
     resendKey: process.env.RESEND_API_KEY,
-    from: process.env.EMAIL_FROM ?? "LIFTED <no-reply@example.com>",
+    // Resend rejects example.com. Without a verified domain, use their test sender.
+    from: process.env.EMAIL_FROM ?? (process.env.RESEND_API_KEY ? "LIFTED <onboarding@resend.dev>" : "LIFTED <no-reply@example.com>"),
   },
   cronSecret: process.env.CRON_SECRET,
   /** Email that is granted admin on register (and by `db:seed` if the account already exists). */

@@ -16,7 +16,14 @@ export async function sendEmail(msg: EmailMessage): Promise<{ delivered: boolean
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
       console.error(`[email] provider error ${res.status}`, detail.slice(0, 500));
-      throw new Error("EMAIL_PROVIDER");
+      let message = "Couldn't send that email.";
+      try {
+        const parsed = JSON.parse(detail) as { message?: string };
+        if (parsed.message) message = parsed.message;
+      } catch {
+        /* keep generic message */
+      }
+      throw new Error(message);
     }
     return { delivered: true };
   }

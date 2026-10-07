@@ -28,7 +28,7 @@ npm run dev                     # http://localhost:3000
 | `BLOB_READ_WRITE_TOKEN` | prod | Vercel Blob **private** store. Without it, uploads go to `./.data/uploads` (dev only). |
 | `AI_GATEWAY_API_KEY` | optional | Without it (and without Vercel OIDC) the food scanner uses a deterministic mock provider. |
 | `FOOD_SCAN_MODEL` | optional | AI Gateway `provider/model` id. Default `google/gemini-3.8-flash`. |
-| `RESEND_API_KEY`, `EMAIL_FROM` | optional | Required to actually send verification/reset mail. Without them, the in-app banner confirms the address directly and links are also printed to the server log. `EMAIL_FROM` must be a domain verified in Resend. |
+| `RESEND_API_KEY`, `EMAIL_FROM` | optional | Required to actually send verification/reset mail. Default `EMAIL_FROM` with a key is `LIFTED <onboarding@resend.dev>` (Resend test sender; delivers only to the Resend account email). Verify your own domain in Resend to mail other addresses. Without a key, the in-app banner confirms the address directly. |
 | `CRON_SECRET` | prod | Protects `/api/v1/cron/cleanup` (daily, see `vercel.json`). The route refuses to run in production without it. |
 | `ADMIN_BOOTSTRAP_EMAIL` | optional | That email is granted **admin** on register, and by `npm run db:seed` if the account already exists. Staff sign in at `/admin/login`. |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | optional | Enables Continue with Google. Existing email/password accounts still work and can link Google in Settings → Connections. |

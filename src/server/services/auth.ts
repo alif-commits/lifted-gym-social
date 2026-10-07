@@ -100,6 +100,9 @@ export async function resendVerification(userId: string) {
     return { delivered, verifyUrl };
   } catch (err) {
     console.error("[email] verify send failed", err);
+    if (config.email.resendKey) {
+      throw new ApiError(502, "EMAIL_FAILED", err instanceof Error ? err.message : "Couldn't send that email.");
+    }
     return { delivered: false, verifyUrl };
   }
 }
