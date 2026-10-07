@@ -1,10 +1,7 @@
-import { route, noContent } from "@/server/http/handler";
+import { route, json } from "@/server/http/handler";
 import { resendVerification } from "@/server/services/auth";
 
 export const POST = route.auth(
-  async ({ user }) => {
-    await resendVerification(user.id);
-    return noContent();
-  },
+  async ({ user }) => json(await resendVerification(user.id)),
   { rateLimit: [{ key: "resend-verify:{user}", limit: 3, windowSeconds: 3600 }] },
 );

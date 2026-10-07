@@ -434,7 +434,7 @@ Modern Gym Culture
 
 LIFTED should not look like a generic black-and-white SaaS dashboard.
 
-Detailed visual rules are defined in `LIFTED_DESIGN_SYSTEM.md`.
+**Status:** skipped. Keep the current UI; do not run a dedicated redesign pass.
 
 ---
 
@@ -563,7 +563,7 @@ Integrations must not compromise LIFTED's core workout model.
 | Monthly leaderboard | P1 | High |
 | AI food scanner | P0 | Very High |
 | Camera food capture | P0 | Very High |
-| Full visual redesign | P0 | Very High |
+| Full visual redesign | skipped | — |
 | Achievements | P1 | Medium |
 | Challenges | P2 | Medium |
 | Wearables | P2 | Medium |
@@ -585,8 +585,8 @@ Integrations must not compromise LIFTED's core workout model.
 5. Strava API Import
       ↓
 6. AI Food Scanner
-      ↓
-7. Full LIFTED Visual Redesign
+
+Visual redesign is skipped.
 ```
 
 ---

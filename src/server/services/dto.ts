@@ -1,5 +1,6 @@
 import { mediaUrl } from "@/server/storage";
 import type { SessionUser } from "@/server/auth/session";
+import { config } from "@/server/config";
 
 export type UserSummaryDto = {
   id: string;
@@ -18,6 +19,7 @@ export function meDto(u: SessionUser) {
     email: u.email,
     role: u.role,
     emailVerified: u.emailVerifiedAt !== null,
+    emailConfigured: Boolean(config.email.resendKey),
     settings: u.settings,
   };
 }

@@ -50,7 +50,7 @@ export async function registerUser(input: RegisterInput) {
   });
 
   const token = await issueToken(user.id, "EMAIL_VERIFY", 24 * HOUR);
-  after(() => sendEmail(verificationEmail(user.email, user.displayName, token)).catch(() => undefined));
+  after(() => sendEmail(verificationEmail(user.email, user.displayName, token)).catch((err) => console.error("[email] verify send failed", err)));
   await writeAudit({ userId: user.id, action: "auth.register", entityType: "user", entityId: user.id });
   await createSession(user.id);
   return user;
@@ -91,9 +91,17 @@ export async function loginStaff(input: LoginInput) {
 
 export async function resendVerification(userId: string) {
   const [u] = await getDb().select().from(users).where(eq(users.id, userId)).limit(1);
-  if (!u || u.emailVerifiedAt) return;
+  if (!u) return { delivered: false, verifyUrl: null as string | null };
+  if (u.emailVerifiedAt) return { delivered: true, verifyUrl: null as string | null };
   const token = await issueToken(u.id, "EMAIL_VERIFY", 24 * HOUR);
-  after(() => sendEmail(verificationEmail(u.email, u.displayName, token)).catch(() => undefined));
+  const verifyUrl = `/verify-email?token=${token}`;
+  try {
+    const { delivered } = await sendEmail(verificationEmail(u.email, u.displayName, token));
+    return { delivered, verifyUrl };
+  } catch (err) {
+    console.error("[email] verify send failed", err);
+    return { delivered: false, verifyUrl };
+  }
 }
 
 export async function verifyEmail(token: string) {
@@ -115,7 +123,7 @@ export async function requestPasswordReset(email: string) {
   // Always behave identically to avoid revealing which emails are registered.
   if (!u || u.status !== "active") return;
   const token = await issueToken(u.id, "PASSWORD_RESET", HOUR);
-  after(() => sendEmail(passwordResetEmail(u.email, u.displayName, token)).catch(() => undefined));
+  after(() => sendEmail(passwordResetEmail(u.email, u.displayName, token)).catch((err) => console.error("[email] reset send failed", err)));
 }
 
 export async function resetPassword(token: string, newPassword: string) {

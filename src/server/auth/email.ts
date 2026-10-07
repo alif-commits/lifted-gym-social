@@ -6,21 +6,26 @@ export type EmailMessage = { to: string; subject: string; text: string; html: st
  * Sends email via Resend when configured. Without a provider, links are logged in development
  * so flows can still be exercised; in production the message is dropped with a warning.
  */
-export async function sendEmail(msg: EmailMessage): Promise<void> {
+export async function sendEmail(msg: EmailMessage): Promise<{ delivered: boolean }> {
   if (config.email.resendKey) {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${config.email.resendKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({ from: config.email.from, to: msg.to, subject: msg.subject, text: msg.text, html: msg.html }),
     });
-    if (!res.ok) console.error(`[email] provider error ${res.status}`);
-    return;
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      console.error(`[email] provider error ${res.status}`, detail.slice(0, 500));
+      throw new Error("EMAIL_PROVIDER");
+    }
+    return { delivered: true };
   }
   if (!config.isProd) {
     console.info(`\n[email:dev] to=${msg.to} subject="${msg.subject}"\n${msg.text}\n`);
   } else {
     console.warn("[email] no provider configured; message not sent");
   }
+  return { delivered: false };
 }
 
 function layout(title: string, body: string, cta: { label: string; url: string }) {
